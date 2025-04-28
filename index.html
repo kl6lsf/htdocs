@@ -1,76 +1,267 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="preconnect" href="https://fonts.gstatic.com">
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 
-<title>Klabika Collective</title>
-<style>
-body { 
-    font-family: 'Roboto', sans-serif;
-    overflow:hidden;
-    background-color: cyan;
-}
-.marquee { 
-  font-size: 100vh;
-  line-height: 100vh;
-  font-family: 'Roboto', sans-serif;
-  font-weight: 300;
-  margin: 0;
-  padding: 0;
-  color: black;
-}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@200..700&display=swap" rel="stylesheet">
 
-.bg-black {
-  background-color: black;
-}
-
-.bg-cyan {
-  background-color: cyan;
-}
-
-.bg-white {
-  background-color: white;
-}
-
-.bg-black .marquee {
-  color: cyan;
-}
-
-.bg-cyan .marquee {
-  color: black;
-}
-
-.bg-white .marquee {
-  color: cyan;
-}
-
-</style>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            font-family: "Oswald", sans-serif;
+        }
+        
+        .marquee-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-style: italic;
+            pointer-events: none; /* Click-through */
+        }
+        
+        .marquee-text {
+            position: absolute;
+            font-size: 125vh;
+            line-height: 1;
+            opacity: 0.1;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+        }
+    </style>
+    
+    <!-- CONFIGURAZIONE PLAYER -->
+    <script>
+        // Configurazione del player - Modifica questi valori per personalizzare il player
+        const CONFIG = {
+            // Informazioni sulla traccia
+            title: "KLABIKA COLLECTIVE MIX",
+            subtitle: "Electronic Music Mix",
+            
+            // URL dei file
+            mp3Url: "https://res.cloudinary.com/devfred/video/upload/v1744576890/tmp/KLABIKA_COLLECTIVE_MIX.mp3",
+            albumArtUrl: "https://res.cloudinary.com/devfred/image/upload/v1649787583/tmp/Kacey_Musgraves_-_Golden_Hour.png",
+            backgroundUrl: "https://res.cloudinary.com/devfred/image/upload/v1744732236/tmp/simple.png",
+            
+            // Impostazioni del marquee
+            marqueeText: "KLABIKA COLLECTIVE MIX", // Testo che scorre
+            marqueeSpeed: 2, // Velocità di scorrimento (pixel per frame)
+            
+            // Copyright
+            copyrightText: "© Copyright All Rights Reserved"
+        };
+    </script>
 </head>
-
-<body class="bg-cyan">
-  <div class="marquee3k" data-speed="6">
-    <div class="marquee">klabika collective</div>
-  </div>
-<script src="js/marquee3k.js"></script>
-
-<script>
-  Marquee3k.init()
-
-  setInterval(function () {
-      switch (document.body.className) {
-        case 'bg-black': document.body.className = 'bg-cyan';
-          break;
-        case 'bg-white': document.body.className = 'bg-black';
-          break;
-        case 'bg-cyan': document.body.className = 'bg-white';
-          break;
-      }
-  }, 800);
-</script>
-
+<body>
+    <!-- Il background viene impostato via JavaScript -->
+    
+    <!-- Semi-transparent overlay with opacity 0.2 -->
+    <div class="absolute inset-0 bg-black bg-opacity-20"></div>
+    
+    <!-- Single Marquee Text -->
+    <div class="marquee-container">
+        <div id="marquee-text" class="marquee-text text-white"></div>
+    </div>
+    
+    <!-- Full-screen player container -->
+    <div class="relative min-h-screen w-full flex flex-col items-center justify-end p-4">
+        <div class="w-full max-w-7xl mx-auto text-white">
+            <!-- Player Controls - Using the original design layout -->
+            <div class="flex flex-col items-left">
+                <!-- Player Controls Row -->
+                <div class="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 mb-8">
+                    <!-- Song Info (sopra su mobile, a destra su desktop) -->
+                    <div class="order-1 md:order-3 text-center md:text-left w-full md:w-auto px-4">
+                        <h2 id="title" class="text-6xl font-normal italic pb-3"></h2>
+                        <p id="subtitle" class="text-3xl text-gray-100 pb-2"></p>
+                        <p id="duration" class="text-2xl text-gray-200">Loading...</p>
+                    </div>
+                    
+                    <!-- Play Button e Album Art in riga su mobile -->
+                    <div class="flex flex-row space-x-4 order-2">
+                        <!-- Play Button (square with border as in original design) -->
+                        <button id="play-button" class="w-32 h-32 md:w-40 md:h-40 border-2 border-white flex items-center justify-center text-red-600 hover:bg-white hover:bg-opacity-20 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 md:h-20 md:w-20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                        </button>
+                        
+                        <!-- Album Art (square with border as in original design) -->
+                        <div class="w-32 h-32 md:w-40 md:h-40 border-2 border-white bg-gray-200 overflow-hidden">
+                            <img id="album-art" alt="Album Art" class="w-full h-full object-cover">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="w-full">
+                    <div class="w-full bg-white h-1 hover:cursor-pointer">
+                        <div id="progress" class="bg-cyan-300 h-1 w-0"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Copyright -->
+            <div id="copyright" class="my-12 text-left text-gray-300"></div>
+        </div>
+    </div>
+    
+    <!-- Hidden Audio Element -->
+    <audio id="audio"></audio>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Applica la configurazione agli elementi HTML
+            document.body.style.backgroundImage = `url('${CONFIG.backgroundUrl}')`;
+            document.body.classList.add('bg-cover', 'bg-center', 'bg-no-repeat');
+            
+            document.getElementById('title').textContent = CONFIG.title;
+            document.getElementById('subtitle').textContent = CONFIG.subtitle;
+            document.getElementById('copyright').textContent = CONFIG.copyrightText;
+            document.getElementById('album-art').src = CONFIG.albumArtUrl;
+            document.getElementById('marquee-text').textContent = CONFIG.marqueeText;
+            
+            const audio = document.getElementById('audio');
+            audio.src = CONFIG.mp3Url;
+            
+            const playButton = document.getElementById('play-button');
+            const progress = document.getElementById('progress');
+            const durationElement = document.getElementById('duration');
+            const marqueeText = document.getElementById('marquee-text');
+            
+            // Variables for marquee animation
+            let animationId = null;
+            let isPaused = true;
+            let position = window.innerWidth; // Start from right edge
+            const speed = CONFIG.marqueeSpeed; // pixels per frame
+            let textWidth = 0;
+            
+            // Measure text width
+            function measureTextWidth() {
+                textWidth = marqueeText.offsetWidth;
+                // Position text initially off-screen to the right
+                marqueeText.style.left = `${position}px`;
+                // Center vertically
+                marqueeText.style.top = `${(window.innerHeight - marqueeText.offsetHeight) / 1.3}px`;
+            }
+            
+            // Animate the marquee
+            function animateMarquee() {
+                if (isPaused) return;
+                
+                position -= speed;
+                
+                // If text has moved completely off screen to the left, reset to right
+                if (position < -textWidth) {
+                    position = window.innerWidth;
+                }
+                
+                marqueeText.style.left = `${position}px`;
+                animationId = requestAnimationFrame(animateMarquee);
+            }
+            
+            // Start/stop marquee animation
+            function toggleMarqueeAnimation(play) {
+                isPaused = !play;
+                
+                if (play) {
+                    if (!animationId) {
+                        animationId = requestAnimationFrame(animateMarquee);
+                    }
+                } else {
+                    if (animationId) {
+                        cancelAnimationFrame(animationId);
+                        animationId = null;
+                    }
+                }
+            }
+            
+            // Initialize marquee
+            window.addEventListener('load', () => {
+                measureTextWidth();
+            });
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                measureTextWidth();
+            });
+            
+            // Format time in MM:SS
+            function formatTime(seconds) {
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = Math.floor(seconds % 60);
+                return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+            }
+            
+            // Update duration when metadata is loaded
+            audio.addEventListener('loadedmetadata', function() {
+                durationElement.textContent = `0:00 / ${formatTime(audio.duration)}`;
+            });
+            
+            // Toggle play/pause
+            playButton.addEventListener('click', function() {
+                if (audio.paused) {
+                    audio.play();
+                    playButton.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                            <rect x="6" y="4" width="4" height="16"></rect>
+                            <rect x="14" y="4" width="4" height="16"></rect>
+                        </svg>
+                    `;
+                    // Resume marquee animation
+                    toggleMarqueeAnimation(true);
+                } else {
+                    audio.pause();
+                    playButton.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                    `;
+                    // Pause marquee animation
+                    toggleMarqueeAnimation(false);
+                }
+            });
+            
+            // Update progress bar and current time
+            audio.addEventListener('timeupdate', function() {
+                const percentage = (audio.currentTime / audio.duration) * 100;
+                progress.style.width = `${percentage}%`;
+                
+                // Update duration element to show current time / total time
+                durationElement.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
+            });
+            
+            // Reset play button when audio ends
+            audio.addEventListener('ended', function() {
+                playButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                `;
+                // Pause marquee animation when audio ends
+                toggleMarqueeAnimation(false);
+            });
+            
+            // Allow seeking by clicking on progress bar
+            const progressContainer = progress.parentElement;
+            progressContainer.addEventListener('click', function(e) {
+                const rect = progressContainer.getBoundingClientRect();
+                const pos = (e.clientX - rect.left) / rect.width;
+                audio.currentTime = pos * audio.duration;
+            });
+        });
+    </script>
 </body>
 </html>
